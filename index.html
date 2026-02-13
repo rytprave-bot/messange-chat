@@ -2,97 +2,124 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Neon Chat</title>
-    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI NEON CHAT PRO</title>
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.6.0/dist/peerjs.min.js"></script>
     <style>
-        :root { --cyan: #00f2ff; --pink: #ff007a; --bg: #0a0a0c; }
-        body { background-color: var(--bg); color: white; font-family: sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        .app-container { width: 90%; max-width: 420px; height: 85vh; background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 40px; display: flex; flex-direction: column; padding: 25px; box-shadow: 0 0 20px rgba(0, 242, 255, 0.2); }
-        input { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 15px; padding: 12px; color: white; width: 100%; box-sizing: border-box; outline: none; margin-bottom: 10px; }
-        button { width: 100%; padding: 15px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; background: var(--cyan); color: #000; text-transform: uppercase; }
-        #chat-window { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin: 15px 0; }
-        .message { padding: 10px; border-radius: 15px; max-width: 80%; }
-        .mine { align-self: flex-end; background: var(--pink); }
-        .friend { align-self: flex-start; background: rgba(255,255,255,0.1); border: 1px solid var(--cyan); }
+        :root { --c: #00f2ff; --p: #ff007a; --bg: #0d0d11; }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        .app { width: 90%; max-width: 400px; height: 85vh; background: rgba(255,255,255,0.03); backdrop-filter: blur(15px); border: 1px solid rgba(0,242,255,0.2); border-radius: 30px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(0,242,255,0.1); }
+        .glass { background: rgba(0,0,0,0.3); border-radius: 15px; padding: 12px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05); }
+        #chat { flex-grow: 1; overflow-y: auto; margin: 10px 0; display: flex; flex-direction: column; gap: 8px; }
+        .msg { padding: 10px 14px; border-radius: 15px; font-size: 0.9rem; max-width: 80%; animation: f 0.2s; }
+        @keyframes f { from { opacity: 0; transform: scale(0.9); } }
+        .m { align-self: flex-end; background: var(--p); box-shadow: 0 0 10px rgba(255,0,122,0.3); }
+        .f { align-self: flex-start; background: rgba(255,255,255,0.1); border-left: 3px solid var(--c); }
+        input { background: rgba(255,255,255,0.07); border: 1px solid #333; color: #fff; padding: 12px; border-radius: 12px; width: 100%; box-sizing: border-box; outline: none; margin-bottom: 8px; transition: 0.3s; }
+        input:focus { border-color: var(--c); box-shadow: 0 0 10px rgba(0,242,255,0.2); }
+        button { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
+        .bc { background: var(--c); color: #000; margin-bottom: 5px; }
+        .bp { background: #fff; color: #000; }
+        button:active { transform: scale(0.96); }
+        .st { font-size: 0.7rem; text-align: center; color: #666; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <h2 id="title" style="text-align:center; color: var(--cyan);">NEON AI CHAT</h2>
-    
-    <div id="setup-screen">
-        <input type="text" id="username" placeholder="Ваш ник...">
-        <button onclick="startApp()">Войти в чат</button>
+<div class="app">
+    <h2 style="text-align:center; margin:0 0 15px 0; color:var(--c); font-size: 1.3rem; text-shadow: 0 0 10px var(--c);">AI NEON CHAT</h2>
+
+    <div id="auth" class="glass">
+        <input type="text" id="u" placeholder="Твой ник (напр. Misha)">
+        <button class="bc" onclick="start()">Войти в сеть</button>
     </div>
 
-    <div id="main-chat" style="display: none; flex-direction: column; height: 100%;">
-        <div style="font-size: 0.8rem; margin-bottom: 10px;">ID: <b id="display-id" style="color: var(--cyan);"></b></div>
-        <div id="chat-window"></div>
-        <input type="text" id="friend-id" placeholder="ID друга...">
-        <button onclick="connect()" style="margin-bottom: 5px;">Связаться</button>
-        <input type="text" id="msg" placeholder="Сообщение...">
-        <button onclick="send()" style="background: white;">Отправить</button>
+    <div id="main" style="display:none; flex-direction:column; height:100%;">
+        <div class="glass" style="display:flex; justify-content:space-between; font-size:0.8rem;">
+            <span>ID: <b id="myid" style="color:var(--c)"></b></span>
+            <span id="stat">● Ожидание</span>
+        </div>
+        <div id="chat"></div>
+        <input type="text" id="fid" placeholder="Ник друга...">
+        <button class="bc" onclick="conn()">Связаться с другом</button>
+        <div style="display:flex; gap:5px;">
+            <input type="text" id="m" placeholder="Сообщение..." onkeypress="if(event.keyCode==13) send()" style="margin:0;">
+            <button class="bp" onclick="send()" style="width:70px;">></button>
+        </div>
     </div>
+    <div id="info" class="st">Версия 2.1 • Стабильная</div>
 </div>
 
 <script>
-    let peer, conn;
-    const prefix = "neon-chat-";
+    let p, c;
+    const pre = "neon-v21-"; // Префикс для изоляции трафика
 
-    function startApp() {
-        const nick = document.getElementById('username').value.trim();
-        if(!nick) return alert("Введите ник!");
+    function start() {
+        const nick = document.getElementById('u').value.trim();
+        if(!nick) return alert("Введи ник!");
 
-        // Проверка, загрузилась ли библиотека
         if (typeof Peer === 'undefined') {
-            alert("Ошибка: Библиотека чата не загрузилась. Попробуйте обновить страницу или выключить VPN.");
-            return;
+            return alert("Ошибка: Библиотека PeerJS не загружена. Попробуй обновить страницу.");
         }
 
-        peer = new Peer(prefix + nick);
+        p = new Peer(pre + nick, { debug: 2 });
 
-        peer.on('open', (id) => {
-            document.getElementById('setup-screen').style.display = 'none';
-            document.getElementById('main-chat').style.display = 'flex';
-            document.getElementById('display-id').innerText = nick;
+        p.on('open', (id) => {
+            document.getElementById('auth').style.display = 'none';
+            document.getElementById('main').style.display = 'flex';
+            document.getElementById('myid').innerText = nick;
+            document.getElementById('stat').innerText = "● Онлайн";
+            document.getElementById('stat').style.color = "#00ff00";
         });
 
-        peer.on('connection', (c) => {
-            conn = c;
-            conn.on('data', (data) => addMsg(data, 'friend'));
+        p.on('connection', (connIn) => {
+            c = connIn;
+            handle();
         });
 
-        peer.on('error', (err) => {
-            alert("Ошибка сети или ник уже занят. Попробуйте другой.");
-            console.error(err);
+        p.on('error', (e) => {
+            alert("Ошибка: " + e.type + ". Возможно, ник занят или плохой интернет.");
         });
     }
 
-    function connect() {
-        const fId = document.getElementById('friend-id').value.trim();
-        conn = peer.connect(prefix + fId);
-        conn.on('open', () => {
-            alert("Подключено!");
-            conn.on('data', (data) => addMsg(data, 'friend'));
+    function conn() {
+        const target = document.getElementById('fid').value.trim();
+        if(!target) return;
+        document.getElementById('stat').innerText = "● Подключение...";
+        c = p.connect(pre + target, { reliable: true });
+        handle();
+    }
+
+    function handle() {
+        c.on('open', () => {
+            document.getElementById('stat').innerText = "● На связи";
+            document.getElementById('stat').style.color = "var(--c)";
+            c.on('data', (d) => add(d, 'f'));
+        });
+        c.on('close', () => {
+            document.getElementById('stat').innerText = "● Отключен";
+            document.getElementById('stat').style.color = "red";
         });
     }
 
     function send() {
-        const input = document.getElementById('msg');
-        if(conn && conn.open && input.value) {
-            conn.send(input.value);
-            addMsg(input.value, 'mine');
-            input.value = "";
+        const i = document.getElementById('m');
+        if(c && c.open && i.value) {
+            c.send(i.value);
+            add(i.value, 'm');
+            i.value = "";
+        } else if(!c || !c.open) {
+            alert("Сначала нажми 'Связаться с другом'!");
         }
     }
 
-    function addMsg(text, type) {
-        const div = document.createElement('div');
-        div.className = `message ${type}`;
-        div.innerText = text;
-        document.getElementById('chat-window').appendChild(div);
+    function add(t, s) {
+        const d = document.createElement('div');
+        d.className = `msg ${s}`;
+        d.innerText = t;
+        const b = document.getElementById('chat');
+        b.appendChild(d);
+        b.scrollTop = b.scrollHeight;
     }
 </script>
 </body>
