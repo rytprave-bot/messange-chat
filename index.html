@@ -35,8 +35,9 @@
         const statusDisplay = document.getElementById('status');
         const chat = document.getElementById('chat');
         
-        // Создаем Peer
-        const peer = new Peer();
+        const peer = new Peer(undefined, {
+    debug: 3
+});
 
         // 1. Когда сервер PeerJS выдал нам ID
         peer.on('open', (id) => {
@@ -96,3 +97,4 @@
     </script>
 </body>
 </html>
+
