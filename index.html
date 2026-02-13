@@ -2,101 +2,112 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Приватный Чат</title>
-    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.6.0/dist/peerjs.min.js"></script>
+    <title>Приватный Чат с Таймером</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #121212; color: #fff; padding: 20px; margin: 0; display: flex; flex-direction: column; height: 95vh; }
-        #chat { flex-grow: 1; border: 1px solid #444; overflow-y: auto; margin: 10px 0; padding: 15px; background: #1e1e1e; border-radius: 8px; font-size: 1.1em; }
-        .controls { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-        input { padding: 10px; background: #333; border: 1px solid #555; color: white; border-radius: 5px; flex-grow: 1; }
-        button { padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #218838; }
-        .id-box { background: #222; padding: 10px; border-radius: 5px; border-left: 4px solid #00ffcc; margin-bottom: 15px; }
-        .status { color: #ffca28; font-size: 0.9em; margin-top: 5px; }
+        body { font-family: sans-serif; background: #121212; color: #fff; padding: 20px; margin: 0; }
+        .container { max-width: 600px; margin: auto; display: flex; flex-direction: column; height: 90vh; }
+        #chat { flex-grow: 1; border: 1px solid #444; overflow-y: auto; margin: 10px 0; padding: 15px; background: #1e1e1e; border-radius: 8px; }
+        .id-box { background: #222; padding: 15px; border-radius: 8px; border-left: 5px solid #00ffcc; margin-bottom: 10px; position: relative; }
+        input { padding: 12px; background: #333; border: 1px solid #555; color: white; border-radius: 5px; flex-grow: 1; }
+        button { padding: 12px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .timer { color: #ffca28; font-weight: bold; }
+        .status { color: #aaa; font-size: 0.9em; margin-top: 5px; }
     </style>
 </head>
 <body>
+    <div class="container">
+        <div class="id-box">
+            <div id="loading-area">
+                <strong>Ожидание ID:</strong> <span class="timer" id="countdown">15</span> сек...
+            </div>
+            <div id="id-ready" style="display: none;">
+                <strong>Твой ID:</strong> <span id="my-id" style="color: #00ffcc; font-size: 1.2em; font-family: monospace;"></span>
+            </div>
+            <div id="status" class="status">Статус: Подключение к сигнальному серверу...</div>
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="peer-id-input" placeholder="Вставь ID друга">
+            <button onclick="connectToPeer()">Соединить</button>
+        </div>
 
-    <div class="id-box">
-        <div><strong>Ваш ID:</strong> <span id="my-id" style="color: #00ffcc; user-select: all;">Получение...</span></div>
-        <div id="status" class="status">Статус: Инициализация сервера...</div>
-    </div>
-    
-    <div class="controls">
-        <input type="text" id="peer-id-input" placeholder="Вставь ID друга">
-        <button onclick="connectToPeer()">Подключиться к другу</button>
-    </div>
+        <div id="chat"></div>
 
-    <div id="chat"></div>
-
-    <div class="controls">
-        <input type="text" id="message-input" placeholder="Введите сообщение..." onkeypress="if(event.keyCode==13) sendMessage()">
-        <button onclick="sendMessage()" style="background: #007bff;">Отправить</button>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="message-input" placeholder="Сообщение..." onkeypress="if(event.keyCode==13) sendMessage()">
+            <button onclick="sendMessage()" style="background: #007bff;">Послать</button>
+        </div>
     </div>
 
     <script>
-        const myIdDisplay = document.getElementById('my-id');
+        let timeLeft = 15;
+        const timerElement = document.getElementById('countdown');
+        const loadingArea = document.getElementById('loading-area');
+        const idReadyArea = document.getElementById('id-ready');
         const statusDisplay = document.getElementById('status');
-        const chat = document.getElementById('chat');
+        
+        // Запуск отсчета
+        const timerId = setInterval(() => {
+            timeLeft--;
+            timerElement.innerText = timeLeft;
+            if (timeLeft <= 0) {
+                clearInterval(timerId);
+                if (document.getElementById('my-id').innerText === "") {
+                    statusDisplay.innerHTML = "<b style='color:red'>Время истекло. ID не получен. Попробуй обновить страницу или зайти с телефона.</b>";
+                }
+            }
+        }, 1000);
+
+        // Инициализация PeerJS
+        const peer = new Peer();
         let conn;
 
-        // Создаем подключение к серверу PeerJS
-        const peer = new Peer();
-
         peer.on('open', (id) => {
-            myIdDisplay.innerText = id;
-            statusDisplay.innerText = "Статус: Готов. Скопируй ID и отправь другу!";
+            clearInterval(timerId); // Останавливаем таймер
+            loadingArea.style.display = 'none'; // Прячем таймер
+            idReadyArea.style.display = 'block'; // Показываем ID
+            document.getElementById('my-id').innerText = id;
+            statusDisplay.innerText = "Статус: Онлайн. Можно общаться!";
         });
 
-        peer.on('error', (err) => {
-            console.error('Ошибка PeerJS:', err);
-            statusDisplay.innerText = "Ошибка: " + err.type;
-        });
-
-        // Слушаем входящие звонки
         peer.on('connection', (c) => {
             conn = c;
             setupChat();
         });
 
-        function connectToPeer() {
+        window.connectToPeer = function() {
             const remoteId = document.getElementById('peer-id-input').value;
-            if (!remoteId) return alert("Сначала введи ID друга!");
             conn = peer.connect(remoteId);
             setupChat();
-        }
+        };
 
         function setupChat() {
             conn.on('open', () => {
-                statusDisplay.innerText = "Статус: На связи с другом!";
-                addMessage("Система", "Вы подключились к чату");
-                
-                conn.on('data', (data) => {
-                    addMessage("Друг", data);
-                });
-            });
-            
-            conn.on('close', () => {
-                statusDisplay.innerText = "Статус: Друг отключился";
+                statusDisplay.innerText = "Статус: Друг подключился!";
+                conn.on('data', (data) => addMessage("Друг", data));
             });
         }
 
-        function sendMessage() {
+        window.sendMessage = function() {
             const input = document.getElementById('message-input');
-            const msg = input.value;
-            if (msg && conn && conn.open) {
-                conn.send(msg);
-                addMessage("Вы", msg);
+            if (conn && conn.open && input.value) {
+                conn.send(input.value);
+                addMessage("Я", input.value);
                 input.value = "";
-            } else if (!conn) {
-                alert("Сначала нужно подключиться к другу!");
             }
-        }
+        };
 
         function addMessage(user, text) {
-            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            chat.innerHTML += `<div><small style="color: #888;">[${time}]</small> <strong>${user}:</strong> ${text}</div>`;
+            const chat = document.getElementById('chat');
+            chat.innerHTML += `<div><b>${user}:</b> ${text}</div>`;
             chat.scrollTop = chat.scrollHeight;
+        }
+
+        // Если библиотека не загрузилась вообще
+        if (typeof Peer === 'undefined') {
+            clearInterval(timerId);
+            statusDisplay.innerHTML = "<b style='color:red'>Ошибка: Скрипт PeerJS заблокирован провайдером или браузером.</b>";
         }
     </script>
 </body>
