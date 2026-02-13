@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Приватный Чат</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: #fff; padding: 20px; }
+        #chat { height: 300px; border: 1px solid #444; overflow-y: auto; margin: 10px 0; padding: 10px; background: #1e1e1e; border-radius: 8px; }
+        input { padding: 8px; background: #333; border: 1px solid #555; color: white; border-radius: 4px; }
+        button { padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #218838; }
+        .status { color: #ffca28; font-size: 0.9em; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <div><strong>Ваш ID:</strong> <span id="my-id" style="color: #00ffcc;">Получение...</span></div>
+    <div id="status" class="status">Статус: Инициализация...</div>
+    
+    <div style="margin: 15px 0;">
+        <input type="text" id="peer-id-input" placeholder="Вставь ID друга">
+        <button onclick="connectToPeer()">Подключиться к другу</button>
+    </div>
+
+    <div id="chat"></div>
+
+    <div style="display: flex; gap: 10px;">
+        <input type="text" id="message-input" placeholder="Сообщение..." style="flex-grow: 1;">
+        <button onclick="sendMessage()">Отправить</button>
+    </div>
+
+    <script>
+        const myIdDisplay = document.getElementById('my-id');
+        const statusDisplay = document.getElementById('status');
+        const chat = document.getElementById('chat');
+        
+        // Создаем Peer
+        const peer = new Peer();
+
+        // 1. Когда сервер PeerJS выдал нам ID
+        peer.on('open', (id) => {
+            myIdDisplay.innerText = id;
+            statusDisplay.innerText = "Статус: Готов к подключению";
+        });
+
+        // 2. Ошибка (например, если нет интернета)
+        peer.on('error', (err) => {
+            console.error(err);
+            statusDisplay.innerText = "Ошибка: " + err.type;
+        });
+
+        // 3. Ждем, когда К НАМ подключатся
+        peer.on('connection', (c) => {
+            window.conn = c;
+            statusDisplay.innerText = "Статус: Друг подключился!";
+            setupChat();
+        });
+
+        // Функция: МЫ подключаемся к другу
+        function connectToPeer() {
+            const remoteId = document.getElementById('peer-id-input').value;
+            if (!remoteId) return alert("Сначала введи ID друга!");
+            
+            statusDisplay.innerText = "Статус: Подключение к " + remoteId + "...";
+            window.conn = peer.connect(remoteId);
+            setupChat();
+        }
+
+        function setupChat() {
+            window.conn.on('open', () => {
+                statusDisplay.innerText = "Статус: Соединение установлено!";
+                chat.innerHTML += <div><em>--- Чат начат ---</em></div>;
+                
+                window.conn.on('data', (data) => {
+                    addMessage("Друг", data);
+                });
+            });
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            if (window.conn && window.conn.open) {
+                window.conn.send(input.value);
+                addMessage("Вы", input.value);
+                input.value = "";
+            } else {
+                alert("Нет соединения! Сначала подключитесь.");
+            }
+        }
+
+        function addMessage(user, text) {
+            chat.innerHTML += <div><strong>${user}:</strong> ${text}</div>;
+            chat.scrollTop = chat.scrollHeight;
+        }
+    </script>
+</body>
+</html>
