@@ -3,28 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI NEON CHAT ULTIMATE</title>
-    <script>
-    /* Прямо здесь находится код PeerJS, теперь интернет-фильтры его не увидят */
-    !function(e,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports):"function"==typeof define&&define.amd?define(["exports"],t):t((e=e||self).Peer=e.Peer||{})}(this,function(e){"use strict"; /* ... тут 5000 строк кода библиотеки ... */ });
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
-    
+    <title>NEON AI CHAT PRO</title>
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.6.0/dist/peerjs.min.js"></script>
     <style>
         :root { --c: #00f2ff; --p: #ff007a; --bg: #0a0a0c; }
         body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
         .app { width: 90%; max-width: 400px; height: 85vh; background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid var(--c); border-radius: 30px; padding: 25px; display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(0,242,255,0.2); }
         .glass { background: rgba(0,0,0,0.4); border-radius: 20px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); }
         #chat { flex-grow: 1; overflow-y: auto; margin: 10px 0; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 12px; border-radius: 15px; font-size: 0.95rem; max-width: 85%; line-height: 1.4; }
+        .msg { padding: 12px; border-radius: 15px; font-size: 0.95rem; max-width: 85%; }
         .m { align-self: flex-end; background: var(--p); box-shadow: 0 4px 15px rgba(255,0,122,0.4); }
         .f { align-self: flex-start; background: rgba(255,255,255,0.1); border-left: 3px solid var(--c); }
         input { background: rgba(255,255,255,0.08); border: 1px solid #333; color: #fff; padding: 14px; border-radius: 15px; width: 100%; box-sizing: border-box; outline: none; margin-bottom: 10px; }
-        button { width: 100%; padding: 14px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s; }
+        button { width: 100%; padding: 14px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
         .btn-c { background: var(--c); color: #000; margin-bottom: 8px; box-shadow: 0 0 15px rgba(0,242,255,0.4); }
         .btn-p { background: #fff; color: #000; }
-        button:active { transform: scale(0.95); }
-        .status-box { font-size: 0.75rem; text-align: center; color: #888; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -34,49 +27,55 @@
 
     <div id="auth-screen">
         <div class="glass">
-            <input type="text" id="nick" placeholder="Твой ник (только латынь)">
-            <button class="btn-c" onclick="start()">Войти в чат</button>
+            <input type="text" id="nick" placeholder="Твой ник">
+            <button class="btn-c" onclick="start()">Войти</button>
         </div>
     </div>
 
     <div id="chat-screen" style="display:none; flex-direction:column; height:100%;">
         <div class="glass" style="display:flex; justify-content:space-between; font-size:0.8rem;">
-            <span>Твой ID: <b id="myid" style="color:var(--c)"></b></span>
-            <span id="state" style="color:#0f0">● Онлайн</span>
+            <span>ID: <b id="myid" style="color:var(--c)"></b></span>
+            <span id="state">● Подключение...</span>
         </div>
         <div id="chat"></div>
         <div class="glass" style="margin-bottom:0;">
             <input type="text" id="fid" placeholder="Ник друга...">
             <button class="btn-c" onclick="connect()">Связаться</button>
             <div style="display:flex; gap:8px; margin-top:8px;">
-                <input type="text" id="msg" placeholder="Сообщение..." onkeypress="if(event.keyCode==13) send()" style="margin:0;">
+                <input type="text" id="msg" placeholder="Текст..." onkeypress="if(event.keyCode==13) send()">
                 <button class="btn-p" onclick="send()" style="width:60px;">OK</button>
             </div>
         </div>
     </div>
-    <div class="status-box">v2.5 Ultimate • Built-in Lib</div>
 </div>
 
 <script>
     let p, c;
-    const pre = "neon-ai-v25-";
+    const pre = "neon-fix-";
+
+    // Настройка серверов-посредников для обхода блокировок роутера
+    const config = {
+        config: {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' }
+            ]
+        }
+    };
 
     function start() {
         const name = document.getElementById('nick').value.trim();
-        if(!name) return alert("Введи ник!");
+        if(!name) return;
 
-        // Теперь библиотека ВСЕГДА будет определена, так как она в коде
-        try {
-            p = new Peer(pre + name);
-        } catch(e) {
-            alert("Ошибка создания Peer. Попробуй другой ник.");
-            return;
-        }
+        p = new Peer(pre + name, config);
 
         p.on('open', (id) => {
             document.getElementById('auth-screen').style.display = 'none';
             document.getElementById('chat-screen').style.display = 'flex';
             document.getElementById('myid').innerText = name;
+            document.getElementById('state').innerText = "● Онлайн";
+            document.getElementById('state').style.color = "#0f0";
         });
 
         p.on('connection', (connIn) => {
@@ -84,17 +83,14 @@
             setup();
         });
 
-        p.on('error', (err) => {
-            if(err.type === 'unavailable-id') alert("Ник занят! Выбери другой.");
-            console.error(err);
-        });
+        p.on('error', (err) => alert("Ошибка: " + err.type));
     }
 
     function connect() {
         const target = document.getElementById('fid').value.trim();
         if(!target) return;
-        document.getElementById('state').innerText = "● Соединение...";
-        c = p.connect(pre + target);
+        document.getElementById('state').innerText = "● Поиск...";
+        c = p.connect(pre + target, { reliable: true });
         setup();
     }
 
@@ -103,6 +99,11 @@
             document.getElementById('state').innerText = "● На связи";
             document.getElementById('state').style.color = "var(--c)";
             c.on('data', (d) => addMsg("Друг", d, 'f'));
+        });
+        
+        c.on('error', () => {
+            document.getElementById('state').innerText = "● Ошибка связи";
+            document.getElementById('state').style.color = "red";
         });
     }
 
@@ -119,9 +120,8 @@
         const d = document.createElement('div');
         d.className = `msg ${s}`;
         d.innerHTML = `<b>${u}:</b> ${t}`;
-        const b = document.getElementById('chat');
-        b.appendChild(d);
-        b.scrollTop = b.scrollHeight;
+        document.getElementById('chat').appendChild(d);
+        document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
     }
 </script>
 </body>
